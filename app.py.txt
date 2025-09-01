@@ -1,0 +1,66 @@
+from flask import Flask, render_template_string, request
+
+app = Flask(__name__)
+
+html = """ 
+<!DOCTYPE html>
+<html>
+<head><title>Calculadora de HH</title></head>
+<body>
+    <h2>Calculadora de Horas Trabalhadas</h2>
+    <form method="POST">
+        Hora Início: <input type="time" name="inicio" required><br><br>
+        Hora Fim: <input type="time" name="fim" required><br><br>
+        Número de Pessoas: <input type="number" name="pessoas" value="1" min="1" required><br><br>
+        <input type="submit" value="Calcular">
+    </form>
+    
+    {% if resultado %}
+    <h3>Resultado:</h3>
+    <table border="1" cellpadding="5">
+        <tr>
+            <th>Hora Início</th>
+            <th>Hora Fim</th>
+            <th>HH</th>
+            <th>Número Pessoas</th>
+            <th>Duração Total</th>
+        </tr>
+        <tr>
+            <td>{{ inicio }}</td>
+            <td>{{ fim }}</td>
+            <td>{{ hh }}</td>
+            <td>{{ pessoas }}</td>
+            <td>{{ duracao_total }}</td>
+        </tr>
+    </table>
+    {% endif %}
+</body>
+</html>
+"""
+
+def calcular_horas(inicio, fim):
+    h1, m1 = map(int, inicio.split(":"))
+    h2, m2 = map(int, fim.split(":"))
+    inicio_min = h1*60 + m1
+    fim_min = h2*60 + m2
+    duracao = fim_min - inicio_min
+    if inicio_min < 12*60 and fim_min > 13*60:
+        duracao -= 60
+    return duracao / 60
+
+@app.route("/", methods=["GET", "POST"])
+def index():
+    resultado = False
+    hh = duracao_total = 0
+    inicio = fim = pessoas = ""
+    if request.method == "POST":
+        inicio = request.form["inicio"]
+        fim = request.form["fim"]
+        pessoas = int(request.form["pessoas"])
+        hh = round(calcular_horas(inicio, fim), 2)
+        duracao_total = round(hh * pessoas, 2)
+        resultado = True
+    return render_template_string(html, resultado=resultado, inicio=inicio, fim=fim, hh=hh, pessoas=pessoas, duracao_total=duracao_total)
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8080)  # Render usa a porta 8080
